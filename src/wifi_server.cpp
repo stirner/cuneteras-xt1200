@@ -144,6 +144,20 @@ const char HTML_DEBUG[] PROGMEM = R"rawliteral(
       <span class="label">Roll Filtered (deg):</span>
       <span class="value">%ROLL_FILTERED%</span>
     </div>
+    <hr>
+    <h3 style="color: #666;">Accelerometer Raw Values (m/s2)</h3>
+    <div class="debug-item">
+      <span class="label">Accel X:</span>
+      <span class="value">%ACCEL_X%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Accel Y:</span>
+      <span class="value">%ACCEL_Y%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Accel Z:</span>
+      <span class="value">%ACCEL_Z%</span>
+    </div>
     <div class="debug-item">
       <span class="label">PWM Left:</span>
       <span class="value">%PWM_LEFT%</span>
@@ -155,6 +169,20 @@ const char HTML_DEBUG[] PROGMEM = R"rawliteral(
     <div class="debug-item">
       <span class="label">Clients Connected:</span>
       <span class="value">%CLIENTS%</span>
+    </div>
+    <hr>
+    <h3 style="color: #666;">MPU6050 Calibration Offsets</h3>
+    <div class="debug-item">
+      <span class="label">Accel Offset X:</span>
+      <span class="value">%OFFSET_X%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Accel Offset Y:</span>
+      <span class="value">%OFFSET_Y%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Accel Offset Z:</span>
+      <span class="value">%OFFSET_Z%</span>
     </div>
     <hr>
     <button onclick="location.href='/'">Back to Configuration</button>
@@ -262,9 +290,15 @@ void APConfigServer::handleDebug() {
   html.replace("%HEAP%", String(ESP.getFreeHeap()));
   html.replace("%ROLL_RAW%", String(mpu.getRawRoll(), 2));
   html.replace("%ROLL_FILTERED%", String(mpu.getRoll(), 2));
+  html.replace("%ACCEL_X%", String(mpu.getAccelX(), 2));
+  html.replace("%ACCEL_Y%", String(mpu.getAccelY(), 2));
+  html.replace("%ACCEL_Z%", String(mpu.getAccelZ(), 2));
   html.replace("%PWM_LEFT%", String(lights.getLeftPWM()));
   html.replace("%PWM_RIGHT%", String(lights.getRightPWM()));
   html.replace("%CLIENTS%", String(WiFi.softAPgetStationNum()));
+  html.replace("%OFFSET_X%", String(cfg.accelOffsetX, 3));
+  html.replace("%OFFSET_Y%", String(cfg.accelOffsetY, 3));
+  html.replace("%OFFSET_Z%", String(cfg.accelOffsetZ, 3));
   
   server.send(200, "text/html", html);
 }

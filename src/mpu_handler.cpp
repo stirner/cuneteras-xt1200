@@ -4,7 +4,7 @@
 #include "config.h"
 #include "config_manager.h"
 
-MPUHandler::MPUHandler() : rollFiltered(0), rollRaw(0) {}
+MPUHandler::MPUHandler() : rollFiltered(0), rollRaw(0), accelX(0), accelY(0), accelZ(0) {}
 
 bool MPUHandler::begin() {
   if (!mpu.begin()) {
@@ -27,15 +27,23 @@ void MPUHandler::update() {
     // Oscilar entre -30° y +30° cada 4 segundos
     rollRaw = 30.0 * sin(now / 2000.0 * 3.14159);
     rollFiltered = cfg.filterAlpha * rollRaw + (1.0 - cfg.filterAlpha) * rollFiltered;
+    accelX = sin(now / 2000.0 * 3.14159) * 5;
+    accelY = cos(now / 2000.0 * 3.14159) * 5;
+    accelZ = 9.8;
   }
 #else
   sensors_event_t a, g, t;
   mpu.getEvent(&a, &g, &t);
   
+  // Guardar valores crudos sin calibración
+  accelX = a.acceleration.x;
+  accelY = a.acceleration.y;
+  accelZ = a.acceleration.z;
+  
   // Aplicar offset de calibración
-  float ax = a.acceleration.x - cfg.accelOffsetX;
-  float ay = a.acceleration.y - cfg.accelOffsetY;
-  float az = a.acceleration.z - cfg.accelOffsetZ;
+  float ax = accelX - cfg.accelOffsetX;
+  float ay = accelY - cfg.accelOffsetY;
+  float az = accelZ - cfg.accelOffsetZ;
   
   // Calcular roll a partir de aceleración
   float rawRoll = atan2(ay, az) * 57.2958;  // radianes a grados
@@ -55,6 +63,18 @@ float MPUHandler::getRoll() const {
 
 float MPUHandler::getRawRoll() const {
   return rollRaw;
+}
+
+float MPUHandler::getAccelX() const {
+  return accelX;
+}
+
+float MPUHandler::getAccelY() const {
+  return accelY;
+}
+
+float MPUHandler::getAccelZ() const {
+  return accelZ;
 }
 
 void MPUHandler::calibrateAccel(float ax, float ay, float az) {
