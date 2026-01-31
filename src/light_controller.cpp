@@ -7,10 +7,9 @@ LightController::LightController()
   : leftPWM(0), rightPWM(0), leftTarget(0), rightTarget(0) {}
 
 void LightController::begin() {
-  ledcSetup(0, PWM_FREQ, PWM_RES);
-  ledcSetup(1, PWM_FREQ, PWM_RES);
-  ledcAttachPin(LEFT_LED_PIN, 0);
-  ledcAttachPin(RIGHT_LED_PIN, 1);
+  pinMode(LEFT_LED_PIN, OUTPUT);
+  pinMode(RIGHT_LED_PIN, OUTPUT);
+  analogWriteRange(cfg.maxPWM);
   
   Serial.println("Light controller initialized");
 }
@@ -51,8 +50,8 @@ void LightController::updateLights(float roll) {
   updateFade(rightPWM, rightTarget);
   
   // Escribir a los pines PWM
-  ledcWrite(0, leftPWM);
-  ledcWrite(1, rightPWM);
+  analogWrite(LEFT_LED_PIN, leftPWM);
+  analogWrite(RIGHT_LED_PIN, rightPWM);
 }
 
 void LightController::printStatus() const {

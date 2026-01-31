@@ -16,9 +16,9 @@ Sistema inteligente de luces de giro para motocicleta que utiliza un acelerómet
 
 ## 📋 Requisitos de Hardware
 
-- **ESP32-S2 LOLIN Mini**: Microcontrolador principal
-  - CPU: 240MHz Xtensa
-  - RAM: 320KB
+- **Wemos D1 mini (ESP8266)**: Microcontrolador principal
+  - CPU: 80MHz Xtensa
+  - RAM: 160KB
   - Flash: 4MB
   - I2C, WiFi, PWM integrados
 
@@ -28,24 +28,23 @@ Sistema inteligente de luces de giro para motocicleta que utiliza un acelerómet
   - Resolución: 16-bit
 
 - **LEDs y transistores**:
-  - LED izquierdo en GPIO 25 (PWM)
-  - LED derecho en GPIO 26 (PWM)
+  - LED izquierdo en GPIO 14 (D5, PWM)
+  - LED derecho en GPIO 12 (D6, PWM)
   - Transistores para conducir los LEDs (si aplica)
   - Resistencias de limitación de corriente
 
 - **Alimentación**:
-  - 5V para ESP32
+  - 5V para Wemos D1 mini (entrada Micro-USB)
   - Voltaje de LEDs según especificación
 
 ## 🛠️ Requisitos de Software
 
 - **PlatformIO Core**: Gestor de plataformas y bibliotecas
-- **ESP-IDF**: Framework (incluido en PlatformIO)
-- **Arduino Framework**: Para espressif32
+- **Arduino Framework**: Para espressif8266
 - **Dependencias**:
   - Adafruit MPU6050 @ 2.2.6
   - Adafruit Unified Sensor @ 1.1.15
-  - EEPROM, Wire, WiFi, WebServer (incluidas en framework)
+  - EEPROM, Wire, ESP8266WiFi, ESP8266WebServer (incluidas en framework)
 
 ## ⚙️ Instalación
 
@@ -66,14 +65,16 @@ pip install platformio
 ### 3. Compilar el proyecto
 
 ```bash
-platformio run --environment lolin_s2_mini
+platformio run --environment d1_mini
 ```
 
 ### 4. Cargar en el dispositivo
 
 ```bash
-platformio run --target upload --environment lolin_s2_mini
+platformio run --target upload --environment d1_mini
 ```
+
+**Nota**: Asegúrate de que la placa está conectada a COM5 (o ajusta `upload_port` en `platformio.ini` según tu puerto serial).
 
 ### 5. Monitorear salida serial
 
@@ -217,11 +218,14 @@ cuneteras-xt1200/
 ## 🔌 Pines GPIO
 
 ```
-GPIO 25   ← LED Izquierdo (PWM)
-GPIO 26   ← LED Derecho (PWM)
-GPIO 8    ← SDA (I2C) MPU6050
-GPIO 9    ← SCL (I2C) MPU6050
+GPIO 14 (D5)  ← LED Izquierdo (PWM)
+GPIO 12 (D6)  ← LED Derecho (PWM)
+GPIO 4  (D2)  ← SDA (I2C) MPU6050
+GPIO 5  (D1)  ← SCL (I2C) MPU6050
 ```
+
+**Referencia Wemos D1 mini:**
+- D0 = GPIO16, D1 = GPIO5, D2 = GPIO4, D3 = GPIO0, D4 = GPIO2, D5 = GPIO14, D6 = GPIO12, D7 = GPIO13, D8 = GPIO15
 
 ## 📊 Cálculo de Ángulo
 
@@ -280,9 +284,11 @@ Pedro Clemente
 
 ## 🔗 Links
 
-- [Documentación ESP32-S2](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/)
+- [Documentación ESP8266](https://arduino-esp8266.readthedocs.io/)
+- [Wemos D1 mini](https://www.wemos.cc/en/latest/d1/d1_mini.html)
 - [Adafruit MPU6050](https://github.com/adafruit/Adafruit_MPU6050)
 - [PlatformIO](https://platformio.org/)
+- [Troubleshooting esptool](https://docs.espressif.com/projects/esptool/en/latest/troubleshooting.html)
 
 ---
 

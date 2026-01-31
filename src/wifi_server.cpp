@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include <WiFi.h>
+#include <ESP8266WiFi.h>
 #include "wifi_server.h"
 #include "config.h"
 #include "config_manager.h"

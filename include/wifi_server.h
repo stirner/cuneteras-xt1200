@@ -1,11 +1,11 @@
 #ifndef WIFI_SERVER_H
 #define WIFI_SERVER_H
 
-#include <WebServer.h>
+#include <ESP8266WebServer.h>
 
 class APConfigServer {
 private:
-  WebServer server;
+  ESP8266WebServer server;
   unsigned long bootTime;
   unsigned long lastClientDisconnectTime;
   bool configWindowOpen;

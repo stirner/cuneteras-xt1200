@@ -2,8 +2,8 @@
 #define CONFIG_H
 
 // ============= PIN CONFIGURATION =============
-#define LEFT_LED_PIN 25
-#define RIGHT_LED_PIN 26
+#define LEFT_LED_PIN 14
+#define RIGHT_LED_PIN 12
 
 // ============= PWM CONFIGURATION =============
 #define PWM_FREQ 5000
