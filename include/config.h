@@ -18,6 +18,9 @@
 #define WIFI_SSID "CorneringLight"
 #define WIFI_PASSWORD "12345678"
 
+// ============= DEBUG CONFIGURATION =============
+#define DEBUG_MODE 1  // 1 = Activo (sin MPU6050), 0 = Normal (con MPU6050)
+
 // ============= DEFAULT CONFIGURATION VALUES =============
 #define DEFAULT_ANGLE_ON 10.0
 #define DEFAULT_ANGLE_OFF 7.0

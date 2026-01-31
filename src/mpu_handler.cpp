@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "mpu_handler.h"
+#include "config.h"
 #include "config_manager.h"
 
 MPUHandler::MPUHandler() : rollFiltered(0), rollRaw(0) {}
@@ -16,6 +17,18 @@ bool MPUHandler::begin() {
 }
 
 void MPUHandler::update() {
+#if DEBUG_MODE
+  // En modo debug, generar datos oscillantes para testing
+  static unsigned long lastUpdate = 0;
+  unsigned long now = millis();
+  
+  if (now - lastUpdate >= 100) {  // Actualizar cada 100ms
+    lastUpdate = now;
+    // Oscilar entre -30° y +30° cada 4 segundos
+    rollRaw = 30.0 * sin(now / 2000.0 * 3.14159);
+    rollFiltered = cfg.filterAlpha * rollRaw + (1.0 - cfg.filterAlpha) * rollFiltered;
+  }
+#else
   sensors_event_t a, g, t;
   mpu.getEvent(&a, &g, &t);
   
@@ -33,6 +46,7 @@ void MPUHandler::update() {
   
   // Aplicar filtro exponencial
   rollFiltered = cfg.filterAlpha * rawRoll + (1.0 - cfg.filterAlpha) * rollFiltered;
+#endif
 }
 
 float MPUHandler::getRoll() const {

@@ -33,12 +33,18 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
   
   // Inicializar I2C y MPU6050
-  Wire.begin();
+  Wire.begin(4, 5);  // SDA=GPIO4(D2), SCL=GPIO5(D1) para Wemos D1 mini
+  
+#if DEBUG_MODE
+  Serial.println("[DEBUG] Modo DEBUG activo - MPU6050 deshabilitado, usando datos mock");
+  // En modo debug, saltamos la inicialización del MPU6050
+#else
   if (!mpu.begin()) {
     Serial.println("FATAL: MPU6050 initialization failed!");
     stateManager.setState(STATE_ERROR);
     while (1) delay(100);
   }
+#endif
   
   // Inicializar controlador de luces
   lights.begin();

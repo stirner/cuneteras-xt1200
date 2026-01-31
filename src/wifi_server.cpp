@@ -11,6 +11,7 @@ const char HTML_ROOT[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Cornering Light Config</title>
   <style>
     body { font-family: Arial; margin: 20px; background: #f5f5f5; }
@@ -34,7 +35,7 @@ const char HTML_ROOT[] PROGMEM = R"rawliteral(
 </head>
 <body>
   <div class="container">
-    <h2>⚙️ Cornering Light Configuration</h2>
+    <h2>[CONFIG] Cornering Light Configuration</h2>
     <form action="/save" method="GET">
       <div class="form-group">
         <label>Angle ON (degrees):</label>
@@ -56,13 +57,27 @@ const char HTML_ROOT[] PROGMEM = R"rawliteral(
         <label>Fade Step (1-50):</label>
         <input type="number" name="fade" min="1" max="50" required>
       </div>
-      <button type="submit" class="btn-save">💾 Save Configuration</button>
+      <hr>
+      <h3 style="color: #666;">MPU6050 Calibration Offsets</h3>
+      <div class="form-group">
+        <label>Accel Offset X:</label>
+        <input type="number" name="ox" step="0.001" required>
+      </div>
+      <div class="form-group">
+        <label>Accel Offset Y:</label>
+        <input type="number" name="oy" step="0.001" required>
+      </div>
+      <div class="form-group">
+        <label>Accel Offset Z:</label>
+        <input type="number" name="oz" step="0.001" required>
+      </div>
+      <button type="submit" class="btn-save">[SAVE] Save Configuration</button>
     </form>
     <div class="button-group">
-      <button onclick="location.href='/reset'" class="btn-reset">🔄 Reset to Defaults</button>
-      <button onclick="location.href='/debug'" class="btn-debug">🔍 Debug Info</button>
+      <button onclick="location.href='/reset'" class="btn-reset">[RST] Reset to Defaults</button>
+      <button onclick="location.href='/debug'" class="btn-debug">[DBG] Debug Info</button>
     </div>
-    <div class="info">ℹ️ Current values will be loaded from device on refresh</div>
+    <div class="info">[i] Current values will be loaded from device on refresh</div>
   </div>
 </body>
 </html>
@@ -71,9 +86,9 @@ const char HTML_ROOT[] PROGMEM = R"rawliteral(
 const char HTML_SAVED[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
-<head><title>Saved</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
+<head><meta charset="UTF-8"><title>Saved</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
 <body>
-  <h2>✅ Configuration Saved Successfully!</h2>
+  <h2>[OK] Configuration Saved Successfully!</h2>
   <p>Please reboot the device to apply changes.</p>
   <p><a href="/">Back to Config</a></p>
 </body>
@@ -83,11 +98,67 @@ const char HTML_SAVED[] PROGMEM = R"rawliteral(
 const char HTML_RESET[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
 <html>
-<head><title>Reset</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
+<head><meta charset="UTF-8"><title>Reset</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
 <body>
-  <h2>🔄 Configuration Reset to Defaults!</h2>
+  <h2>[RST] Configuration Reset to Defaults!</h2>
   <p>Please reboot the device.</p>
   <p><a href="/">Back to Config</a></p>
+</body>
+</html>
+)rawliteral";
+
+const char HTML_DEBUG[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Debug Info</title>
+  <style>
+    body { font-family: monospace; margin: 20px; background: #f5f5f5; }
+    .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h2 { color: #333; }
+    .debug-item { margin: 10px 0; padding: 10px; background: #f9f9f9; border-left: 3px solid #2196F3; }
+    .label { font-weight: bold; color: #555; }
+    .value { color: #2196F3; margin-left: 10px; }
+    hr { margin: 20px 0; border: none; border-top: 2px solid #eee; }
+    button { padding: 10px 20px; margin-top: 20px; background-color: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; }
+    button:hover { background-color: #45a049; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>[DBG] System Debug Information</h2>
+    <div class="debug-item">
+      <span class="label">Uptime (ms):</span>
+      <span class="value">%UPTIME%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Free Heap (bytes):</span>
+      <span class="value">%HEAP%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Roll Raw (deg):</span>
+      <span class="value">%ROLL_RAW%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Roll Filtered (deg):</span>
+      <span class="value">%ROLL_FILTERED%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">PWM Left:</span>
+      <span class="value">%PWM_LEFT%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">PWM Right:</span>
+      <span class="value">%PWM_RIGHT%</span>
+    </div>
+    <div class="debug-item">
+      <span class="label">Clients Connected:</span>
+      <span class="value">%CLIENTS%</span>
+    </div>
+    <hr>
+    <button onclick="location.href='/'">Back to Configuration</button>
+  </div>
 </body>
 </html>
 )rawliteral";
@@ -108,6 +179,12 @@ void APConfigServer::handleRoot() {
                String("<input type=\"number\" name=\"alpha\" value=\"") + cfg.filterAlpha + "\"");
   html.replace("<input type=\"number\" name=\"fade\"", 
                String("<input type=\"number\" name=\"fade\" value=\"") + cfg.fadeStep + "\"");
+  html.replace("<input type=\"number\" name=\"ox\"", 
+               String("<input type=\"number\" name=\"ox\" value=\"") + cfg.accelOffsetX + "\"");
+  html.replace("<input type=\"number\" name=\"oy\"", 
+               String("<input type=\"number\" name=\"oy\" value=\"") + cfg.accelOffsetY + "\"");
+  html.replace("<input type=\"number\" name=\"oz\"", 
+               String("<input type=\"number\" name=\"oz\" value=\"") + cfg.accelOffsetZ + "\"");
   
   server.send(200, "text/html", html);
 }
@@ -118,6 +195,17 @@ void APConfigServer::handleSave() {
   cfg.maxPWM = server.arg("pwm").toInt();
   cfg.filterAlpha = server.arg("alpha").toFloat();
   cfg.fadeStep = server.arg("fade").toInt();
+  
+  // Cargar offsets de calibración si están en los argumentos
+  if (server.hasArg("ox")) {
+    cfg.accelOffsetX = server.arg("ox").toFloat();
+  }
+  if (server.hasArg("oy")) {
+    cfg.accelOffsetY = server.arg("oy").toFloat();
+  }
+  if (server.hasArg("oz")) {
+    cfg.accelOffsetZ = server.arg("oz").toFloat();
+  }
   
   // Validar valores
   cfg.angleOn = constrain(cfg.angleOn, 0, 90);
@@ -167,17 +255,18 @@ void APConfigServer::handleDebug() {
   extern MPUHandler mpu;
   extern LightController lights;
   
-  String json = "{";
-  json += "\"uptime_ms\":" + String(millis()) + ",";
-  json += "\"free_heap\":" + String(ESP.getFreeHeap()) + ",";
-  json += "\"roll_raw\":" + String(mpu.getRawRoll(), 2) + ",";
-  json += "\"roll_filtered\":" + String(mpu.getRoll(), 2) + ",";
-  json += "\"pwm_left\":" + String(lights.getLeftPWM()) + ",";
-  json += "\"pwm_right\":" + String(lights.getRightPWM()) + ",";
-  json += "\"clients_connected\":" + String(WiFi.softAPgetStationNum());
-  json += "}";
+  String html = String(HTML_DEBUG);
   
-  server.send(200, "application/json", json);
+  // Reemplazar valores en la plantilla
+  html.replace("%UPTIME%", String(millis()));
+  html.replace("%HEAP%", String(ESP.getFreeHeap()));
+  html.replace("%ROLL_RAW%", String(mpu.getRawRoll(), 2));
+  html.replace("%ROLL_FILTERED%", String(mpu.getRoll(), 2));
+  html.replace("%PWM_LEFT%", String(lights.getLeftPWM()));
+  html.replace("%PWM_RIGHT%", String(lights.getRightPWM()));
+  html.replace("%CLIENTS%", String(WiFi.softAPgetStationNum()));
+  
+  server.send(200, "text/html", html);
 }
 
 void APConfigServer::handleCalibrate() {
