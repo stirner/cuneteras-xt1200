@@ -1,0 +1,261 @@
+#include <Arduino.h>
+#include <WiFi.h>
+#include "wifi_server.h"
+#include "config.h"
+#include "config_manager.h"
+#include "mpu_handler.h"
+#include "light_controller.h"
+
+// HTML almacenado en PROGMEM para ahorrar RAM
+const char HTML_ROOT[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cornering Light Config</title>
+  <style>
+    body { font-family: Arial; margin: 20px; background: #f5f5f5; }
+    .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    h2 { color: #333; }
+    .form-group { margin: 15px 0; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+    input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    button { width: 100%; padding: 10px; margin-top: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .btn-save { background-color: #4CAF50; color: white; }
+    .btn-save:hover { background-color: #45a049; }
+    .btn-reset { background-color: #f44336; color: white; }
+    .btn-reset:hover { background-color: #da190b; }
+    .btn-debug { background-color: #2196F3; color: white; }
+    .btn-debug:hover { background-color: #0b7dda; }
+    .button-group { display: flex; gap: 10px; }
+    .button-group button { flex: 1; }
+    hr { margin: 20px 0; border: none; border-top: 2px solid #eee; }
+    .info { background: #e3f2fd; padding: 10px; border-radius: 4px; margin-top: 10px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>⚙️ Cornering Light Configuration</h2>
+    <form action="/save" method="GET">
+      <div class="form-group">
+        <label>Angle ON (degrees):</label>
+        <input type="number" name="aon" step="0.1" min="0" max="90" required>
+      </div>
+      <div class="form-group">
+        <label>Angle OFF (degrees):</label>
+        <input type="number" name="aoff" step="0.1" min="0" max="90" required>
+      </div>
+      <div class="form-group">
+        <label>Max PWM (0-1023):</label>
+        <input type="number" name="pwm" min="0" max="1023" required>
+      </div>
+      <div class="form-group">
+        <label>Filter Alpha (0-1):</label>
+        <input type="number" name="alpha" step="0.01" min="0" max="1" required>
+      </div>
+      <div class="form-group">
+        <label>Fade Step (1-50):</label>
+        <input type="number" name="fade" min="1" max="50" required>
+      </div>
+      <button type="submit" class="btn-save">💾 Save Configuration</button>
+    </form>
+    <div class="button-group">
+      <button onclick="location.href='/reset'" class="btn-reset">🔄 Reset to Defaults</button>
+      <button onclick="location.href='/debug'" class="btn-debug">🔍 Debug Info</button>
+    </div>
+    <div class="info">ℹ️ Current values will be loaded from device on refresh</div>
+  </div>
+</body>
+</html>
+)rawliteral";
+
+const char HTML_SAVED[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head><title>Saved</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
+<body>
+  <h2>✅ Configuration Saved Successfully!</h2>
+  <p>Please reboot the device to apply changes.</p>
+  <p><a href="/">Back to Config</a></p>
+</body>
+</html>
+)rawliteral";
+
+const char HTML_RESET[] PROGMEM = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head><title>Reset</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
+<body>
+  <h2>🔄 Configuration Reset to Defaults!</h2>
+  <p>Please reboot the device.</p>
+  <p><a href="/">Back to Config</a></p>
+</body>
+</html>
+)rawliteral";
+
+APConfigServer::APConfigServer() 
+  : server(80), bootTime(0), lastClientDisconnectTime(0), configWindowOpen(true), clientConnected(false), configSaved(false) {}
+
+void APConfigServer::handleRoot() {
+  String html = String(HTML_ROOT);
+  // Cargar valores actuales en los inputs
+  html.replace("<input type=\"number\" name=\"aon\"", 
+               String("<input type=\"number\" name=\"aon\" value=\"") + cfg.angleOn + "\"");
+  html.replace("<input type=\"number\" name=\"aoff\"", 
+               String("<input type=\"number\" name=\"aoff\" value=\"") + cfg.angleOff + "\"");
+  html.replace("<input type=\"number\" name=\"pwm\"", 
+               String("<input type=\"number\" name=\"pwm\" value=\"") + cfg.maxPWM + "\"");
+  html.replace("<input type=\"number\" name=\"alpha\"", 
+               String("<input type=\"number\" name=\"alpha\" value=\"") + cfg.filterAlpha + "\"");
+  html.replace("<input type=\"number\" name=\"fade\"", 
+               String("<input type=\"number\" name=\"fade\" value=\"") + cfg.fadeStep + "\"");
+  
+  server.send(200, "text/html", html);
+}
+
+void APConfigServer::handleSave() {
+  cfg.angleOn = server.arg("aon").toFloat();
+  cfg.angleOff = server.arg("aoff").toFloat();
+  cfg.maxPWM = server.arg("pwm").toInt();
+  cfg.filterAlpha = server.arg("alpha").toFloat();
+  cfg.fadeStep = server.arg("fade").toInt();
+  
+  // Validar valores
+  cfg.angleOn = constrain(cfg.angleOn, 0, 90);
+  cfg.angleOff = constrain(cfg.angleOff, 0, 90);
+  cfg.maxPWM = constrain(cfg.maxPWM, 0, 1023);
+  cfg.filterAlpha = constrain(cfg.filterAlpha, 0, 1);
+  cfg.fadeStep = constrain(cfg.fadeStep, 1, 50);
+  
+  // Validar que angleOff < angleOn
+  if (cfg.angleOff >= cfg.angleOn) {
+    cfg.angleOff = cfg.angleOn - 1.0;
+  }
+  
+  saveConfig();
+  
+  String response = String(HTML_SAVED);
+  server.send(200, "text/html", response);
+  
+  // Marcar configuración como guardada y cerrar WiFi
+  configSaved = true;
+  Serial.println("Configuration saved! Closing WiFi...");
+}
+
+void APConfigServer::handleStatus() {
+  String json = "{";
+  json += "\"angleOn\":" + String(cfg.angleOn, 2) + ",";
+  json += "\"angleOff\":" + String(cfg.angleOff, 2) + ",";
+  json += "\"maxPWM\":" + String(cfg.maxPWM) + ",";
+  json += "\"filterAlpha\":" + String(cfg.filterAlpha, 4) + ",";
+  json += "\"fadeStep\":" + String(cfg.fadeStep);
+  json += "}";
+  server.send(200, "application/json", json);
+}
+
+void APConfigServer::handleReset() {
+  resetConfig();
+  
+  String response = String(HTML_RESET);
+  server.send(200, "text/html", response);
+  
+  // Marcar configuración como guardada y cerrar WiFi
+  configSaved = true;
+  Serial.println("Configuration reset! Closing WiFi...");
+}
+
+void APConfigServer::handleDebug() {
+  extern MPUHandler mpu;
+  extern LightController lights;
+  
+  String json = "{";
+  json += "\"uptime_ms\":" + String(millis()) + ",";
+  json += "\"free_heap\":" + String(ESP.getFreeHeap()) + ",";
+  json += "\"roll_raw\":" + String(mpu.getRawRoll(), 2) + ",";
+  json += "\"roll_filtered\":" + String(mpu.getRoll(), 2) + ",";
+  json += "\"pwm_left\":" + String(lights.getLeftPWM()) + ",";
+  json += "\"pwm_right\":" + String(lights.getRightPWM()) + ",";
+  json += "\"clients_connected\":" + String(WiFi.softAPgetStationNum());
+  json += "}";
+  
+  server.send(200, "application/json", json);
+}
+
+void APConfigServer::handleCalibrate() {
+  if (server.hasArg("ax") && server.hasArg("ay") && server.hasArg("az")) {
+    extern MPUHandler mpu;
+    float ax = server.arg("ax").toFloat();
+    float ay = server.arg("ay").toFloat();
+    float az = server.arg("az").toFloat();
+    mpu.calibrateAccel(ax, ay, az);
+    saveConfig();
+    server.send(200, "application/json", "{\"status\":\"calibrated\"}");
+  } else {
+    server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
+  }
+}
+
+void APConfigServer::begin() {
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(WIFI_SSID, WIFI_PASSWORD);
+  
+  IPAddress apIP = WiFi.softAPIP();
+  Serial.print("WiFi AP started. Connect to: ");
+  Serial.print(WIFI_SSID);
+  Serial.print(" IP: ");
+  Serial.println(apIP);
+  
+  server.on("/", std::bind(&APConfigServer::handleRoot, this));
+  server.on("/save", std::bind(&APConfigServer::handleSave, this));
+  server.on("/status", std::bind(&APConfigServer::handleStatus, this));
+  server.on("/reset", std::bind(&APConfigServer::handleReset, this));
+  server.on("/debug", std::bind(&APConfigServer::handleDebug, this));
+  server.on("/calibrate", std::bind(&APConfigServer::handleCalibrate, this));
+  
+  server.begin();
+  bootTime = millis();
+}
+
+void APConfigServer::handleClient() {
+  server.handleClient();
+  
+  // Actualizar estado de conexión
+  int stationNum = WiFi.softAPgetStationNum();
+  if (stationNum > 0) {
+    if (!clientConnected) {
+      clientConnected = true;
+      Serial.println("[WiFi] Client connected - timeout disabled");
+    }
+  } else {
+    if (clientConnected) {
+      lastClientDisconnectTime = millis();
+      clientConnected = false;
+      Serial.println("[WiFi] Client disconnected - 30s timeout started");
+    }
+  }
+}
+
+bool APConfigServer::shouldCloseConfigWindow() const {
+  // Si la configuración fue guardada, cerrar inmediatamente
+  if (configSaved) {
+    return true;
+  }
+  
+  // Si hay cliente conectado, no cerrar (infinito)
+  if (clientConnected) {
+    return false;
+  }
+  
+  // Si no hay cliente, cerrar después de 30 segundos
+  if (millis() - lastClientDisconnectTime >= WIFI_TIMEOUT) {
+    return true;
+  }
+  
+  return false;
+}
+
+void APConfigServer::closeConfigWindow() {
+  WiFi.softAPdisconnect(true);
+  WiFi.mode(WIFI_OFF);
+  configWindowOpen = false;
+  Serial.println("Config window closed. Entering normal mode.");
+}
