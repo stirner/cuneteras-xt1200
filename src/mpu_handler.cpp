@@ -17,45 +17,47 @@ bool MPUHandler::begin() {
 }
 
 void MPUHandler::update() {
-#if DEBUG_MODE
-  // En modo debug, generar datos oscillantes para testing
-  static unsigned long lastUpdate = 0;
-  unsigned long now = millis();
+  extern Config cfg;
   
-  if (now - lastUpdate >= 100) {  // Actualizar cada 100ms
-    lastUpdate = now;
-    // Oscilar entre -30° y +30° cada 4 segundos
-    rollRaw = 30.0 * sin(now / 2000.0 * 3.14159);
-    rollFiltered = cfg.filterAlpha * rollRaw + (1.0 - cfg.filterAlpha) * rollFiltered;
-    accelX = sin(now / 2000.0 * 3.14159) * 5;
-    accelY = cos(now / 2000.0 * 3.14159) * 5;
-    accelZ = 9.8;
+  // Usar runtime debug mode
+  if (cfg.debugMode) {
+    // En modo debug, generar datos oscillantes para testing
+    static unsigned long lastUpdate = 0;
+    unsigned long now = millis();
+    
+    if (now - lastUpdate >= 100) {  // Actualizar cada 100ms
+      lastUpdate = now;
+      // Oscilar entre -30° y +30° cada 4 segundos
+      rollRaw = 30.0 * sin(now / 2000.0 * 3.14159);
+      rollFiltered = cfg.filterAlpha * rollRaw + (1.0 - cfg.filterAlpha) * rollFiltered;
+      accelX = sin(now / 2000.0 * 3.14159) * 5;
+      accelY = cos(now / 2000.0 * 3.14159) * 5;
+      accelZ = 9.8;
+    }
+  } else {
+    sensors_event_t a, g, t;
+    mpu.getEvent(&a, &g, &t);
+    
+    // Guardar valores crudos sin calibración
+    accelX = a.acceleration.x;
+    accelY = a.acceleration.y;
+    accelZ = a.acceleration.z;
+    
+    // Aplicar offset de calibración
+    float ax = accelX - cfg.accelOffsetX;
+    float ay = accelY - cfg.accelOffsetY;
+    float az = accelZ - cfg.accelOffsetZ;
+    
+    // Calcular roll a partir de aceleración
+    float rawRoll = atan2(ay, az) * 57.2958;  // radianes a grados
+    
+    // Limitar a ±90° para evitar glitches
+    rawRoll = constrain(rawRoll, -90.0, 90.0);
+    rollRaw = rawRoll;
+    
+    // Aplicar filtro exponencial
+    rollFiltered = cfg.filterAlpha * rawRoll + (1.0 - cfg.filterAlpha) * rollFiltered;
   }
-#else
-  sensors_event_t a, g, t;
-  mpu.getEvent(&a, &g, &t);
-  
-  // Guardar valores crudos sin calibración
-  accelX = a.acceleration.x;
-  accelY = a.acceleration.y;
-  accelZ = a.acceleration.z;
-  
-  // Aplicar offset de calibración
-  float ax = accelX - cfg.accelOffsetX;
-  float ay = accelY - cfg.accelOffsetY;
-  float az = accelZ - cfg.accelOffsetZ;
-  
-  // Calcular roll a partir de aceleración
-  float rawRoll = atan2(ay, az) * 57.2958;  // radianes a grados
-  
-  // Limitar a ±90° para evitar glitches
-  rawRoll = constrain(rawRoll, -90.0, 90.0);
-  rollRaw = rawRoll;
-  
-  // Aplicar filtro exponencial
-  rollFiltered = cfg.filterAlpha * rawRoll + (1.0 - cfg.filterAlpha) * rollFiltered;
-#endif
-}
 
 float MPUHandler::getRoll() const {
   return rollFiltered;

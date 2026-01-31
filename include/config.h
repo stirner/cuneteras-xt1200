@@ -48,6 +48,7 @@ struct Config {
   float accelOffsetX = DEFAULT_ACCEL_OFFSET_X;
   float accelOffsetY = DEFAULT_ACCEL_OFFSET_Y;
   float accelOffsetZ = DEFAULT_ACCEL_OFFSET_Z;
+  bool debugMode = (DEBUG_MODE == 1);
 };
 
 #endif

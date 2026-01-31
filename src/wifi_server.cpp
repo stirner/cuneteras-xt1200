@@ -57,6 +57,12 @@ const char HTML_ROOT[] PROGMEM = R"rawliteral(
         <label>Fade Step (1-50):</label>
         <input type="number" name="fade" min="1" max="50" value="%FADE_STEP%" required>
       </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="debug" value="1" %DEBUG_CHECKED%>
+          Debug Mode (Simulated Sensor)
+        </label>
+      </div>
       <hr>
       <h3 style="color: #666;">MPU6050 Calibration Offsets</h3>
       <div class="form-group">
@@ -184,6 +190,10 @@ const char HTML_DEBUG[] PROGMEM = R"rawliteral(
       <span class="label">Accel Offset Z:</span>
       <span class="value">%OFFSET_Z%</span>
     </div>
+    <div class="debug-item">
+      <span class="label">Debug Mode:</span>
+      <span class="value" style="color: %DEBUG_COLOR%;">%DEBUG_MODE%</span>
+    </div>
     <hr>
     <button onclick="location.href='/'">Back to Configuration</button>
   </div>
@@ -205,6 +215,7 @@ void APConfigServer::handleRoot() {
   html.replace("%OFFSET_X%", String(cfg.accelOffsetX, 3));
   html.replace("%OFFSET_Y%", String(cfg.accelOffsetY, 3));
   html.replace("%OFFSET_Z%", String(cfg.accelOffsetZ, 3));
+  html.replace("%DEBUG_CHECKED%", cfg.debugMode ? "checked" : "");
   
   server.send(200, "text/html", html);
 }
@@ -226,6 +237,9 @@ void APConfigServer::handleSave() {
   if (server.hasArg("oz")) {
     cfg.accelOffsetZ = server.arg("oz").toFloat();
   }
+  
+  // Cargar modo debug
+  cfg.debugMode = server.hasArg("debug");
   
   // Validar valores
   cfg.angleOn = constrain(cfg.angleOn, 0, 90);
@@ -291,6 +305,8 @@ void APConfigServer::handleDebug() {
   html.replace("%OFFSET_X%", String(cfg.accelOffsetX, 3));
   html.replace("%OFFSET_Y%", String(cfg.accelOffsetY, 3));
   html.replace("%OFFSET_Z%", String(cfg.accelOffsetZ, 3));
+  html.replace("%DEBUG_MODE%", cfg.debugMode ? "ON (Simulated)" : "OFF (Real Sensor)");
+  html.replace("%DEBUG_COLOR%", cfg.debugMode ? "#FFA500" : "#00AA00");
   
   server.send(200, "text/html", html);
 }
