@@ -58,6 +58,7 @@ void MPUHandler::update() {
     // Aplicar filtro exponencial
     rollFiltered = cfg.filterAlpha * rawRoll + (1.0 - cfg.filterAlpha) * rollFiltered;
   }
+}
 
 float MPUHandler::getRoll() const {
   return rollFiltered;
