@@ -39,37 +39,37 @@ const char HTML_ROOT[] PROGMEM = R"rawliteral(
     <form action="/save" method="GET">
       <div class="form-group">
         <label>Angle ON (degrees):</label>
-        <input type="number" name="aon" step="0.1" min="0" max="90" required>
+        <input type="number" name="aon" step="0.1" min="0" max="90" value="%ANGLE_ON%" required>
       </div>
       <div class="form-group">
         <label>Angle OFF (degrees):</label>
-        <input type="number" name="aoff" step="0.1" min="0" max="90" required>
+        <input type="number" name="aoff" step="0.1" min="0" max="90" value="%ANGLE_OFF%" required>
       </div>
       <div class="form-group">
         <label>Max PWM (0-1023):</label>
-        <input type="number" name="pwm" min="0" max="1023" required>
+        <input type="number" name="pwm" min="0" max="1023" value="%MAX_PWM%" required>
       </div>
       <div class="form-group">
         <label>Filter Alpha (0-1):</label>
-        <input type="number" name="alpha" step="0.01" min="0" max="1" required>
+        <input type="number" name="alpha" step="0.01" min="0" max="1" value="%FILTER_ALPHA%" required>
       </div>
       <div class="form-group">
         <label>Fade Step (1-50):</label>
-        <input type="number" name="fade" min="1" max="50" required>
+        <input type="number" name="fade" min="1" max="50" value="%FADE_STEP%" required>
       </div>
       <hr>
       <h3 style="color: #666;">MPU6050 Calibration Offsets</h3>
       <div class="form-group">
         <label>Accel Offset X:</label>
-        <input type="number" name="ox" step="0.001" required>
+        <input type="number" name="ox" step="0.001" value="%OFFSET_X%" required>
       </div>
       <div class="form-group">
         <label>Accel Offset Y:</label>
-        <input type="number" name="oy" step="0.001" required>
+        <input type="number" name="oy" step="0.001" value="%OFFSET_Y%" required>
       </div>
       <div class="form-group">
         <label>Accel Offset Z:</label>
-        <input type="number" name="oz" step="0.001" required>
+        <input type="number" name="oz" step="0.001" value="%OFFSET_Z%" required>
       </div>
       <button type="submit" class="btn-save">[SAVE] Save Configuration</button>
     </form>
@@ -89,7 +89,7 @@ const char HTML_SAVED[] PROGMEM = R"rawliteral(
 <head><meta charset="UTF-8"><title>Saved</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
 <body>
   <h2>[OK] Configuration Saved Successfully!</h2>
-  <p>Please reboot the device to apply changes.</p>
+  <p>Changes applied immediately. Light controller updated.</p>
   <p><a href="/">Back to Config</a></p>
 </body>
 </html>
@@ -101,7 +101,7 @@ const char HTML_RESET[] PROGMEM = R"rawliteral(
 <head><meta charset="UTF-8"><title>Reset</title><style>body{font-family:Arial;margin:20px;text-align:center;}</style></head>
 <body>
   <h2>[RST] Configuration Reset to Defaults!</h2>
-  <p>Please reboot the device.</p>
+  <p>All settings restored and applied immediately.</p>
   <p><a href="/">Back to Config</a></p>
 </body>
 </html>
@@ -196,23 +196,15 @@ APConfigServer::APConfigServer()
 
 void APConfigServer::handleRoot() {
   String html = String(HTML_ROOT);
-  // Cargar valores actuales en los inputs
-  html.replace("<input type=\"number\" name=\"aon\"", 
-               String("<input type=\"number\" name=\"aon\" value=\"") + cfg.angleOn + "\"");
-  html.replace("<input type=\"number\" name=\"aoff\"", 
-               String("<input type=\"number\" name=\"aoff\" value=\"") + cfg.angleOff + "\"");
-  html.replace("<input type=\"number\" name=\"pwm\"", 
-               String("<input type=\"number\" name=\"pwm\" value=\"") + cfg.maxPWM + "\"");
-  html.replace("<input type=\"number\" name=\"alpha\"", 
-               String("<input type=\"number\" name=\"alpha\" value=\"") + cfg.filterAlpha + "\"");
-  html.replace("<input type=\"number\" name=\"fade\"", 
-               String("<input type=\"number\" name=\"fade\" value=\"") + cfg.fadeStep + "\"");
-  html.replace("<input type=\"number\" name=\"ox\"", 
-               String("<input type=\"number\" name=\"ox\" value=\"") + cfg.accelOffsetX + "\"");
-  html.replace("<input type=\"number\" name=\"oy\"", 
-               String("<input type=\"number\" name=\"oy\" value=\"") + cfg.accelOffsetY + "\"");
-  html.replace("<input type=\"number\" name=\"oz\"", 
-               String("<input type=\"number\" name=\"oz\" value=\"") + cfg.accelOffsetZ + "\"");
+  // Cargar valores actuales en los inputs usando placeholders
+  html.replace("%ANGLE_ON%", String(cfg.angleOn, 1));
+  html.replace("%ANGLE_OFF%", String(cfg.angleOff, 1));
+  html.replace("%MAX_PWM%", String(cfg.maxPWM));
+  html.replace("%FILTER_ALPHA%", String(cfg.filterAlpha, 2));
+  html.replace("%FADE_STEP%", String(cfg.fadeStep));
+  html.replace("%OFFSET_X%", String(cfg.accelOffsetX, 3));
+  html.replace("%OFFSET_Y%", String(cfg.accelOffsetY, 3));
+  html.replace("%OFFSET_Z%", String(cfg.accelOffsetZ, 3));
   
   server.send(200, "text/html", html);
 }
@@ -248,13 +240,13 @@ void APConfigServer::handleSave() {
   }
   
   saveConfig();
+  loadConfig();  // Hot-reload: apply changes immediately
   
   String response = String(HTML_SAVED);
   server.send(200, "text/html", response);
   
-  // Marcar configuración como guardada y cerrar WiFi
-  configSaved = true;
-  Serial.println("Configuration saved! Closing WiFi...");
+  // Keep WiFi running - don't reboot or close connection
+  Serial.println("Configuration saved and applied immediately!");
 }
 
 void APConfigServer::handleStatus() {
@@ -270,13 +262,13 @@ void APConfigServer::handleStatus() {
 
 void APConfigServer::handleReset() {
   resetConfig();
+  loadConfig();  // Hot-reload: apply default values immediately
   
   String response = String(HTML_RESET);
   server.send(200, "text/html", response);
   
-  // Marcar configuración como guardada y cerrar WiFi
-  configSaved = true;
-  Serial.println("Configuration reset! Closing WiFi...");
+  // Keep WiFi running - don't reboot or close connection
+  Serial.println("Configuration reset and applied immediately!");
 }
 
 void APConfigServer::handleDebug() {
@@ -358,10 +350,8 @@ void APConfigServer::handleClient() {
 }
 
 bool APConfigServer::shouldCloseConfigWindow() const {
-  // Si la configuración fue guardada, cerrar inmediatamente
-  if (configSaved) {
-    return true;
-  }
+  // No cerrar automáticamente después de guardar - permitir más ajustes
+  // La ventana de configuración permanece abierta hasta que no hay clientes por 30 segundos
   
   // Si hay cliente conectado, no cerrar (infinito)
   if (clientConnected) {

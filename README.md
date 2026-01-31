@@ -119,14 +119,18 @@ Interfaz web de configuración
 - **Respuesta**: HTML con formulario de configuración
 
 #### GET `/save`
-Guardar configuración
+Guardar configuración (con hot-reload)
 - **Parámetros**:
   - `aon`: Angle ON (float)
   - `aoff`: Angle OFF (float)
   - `pwm`: Max PWM (int)
   - `alpha`: Filter Alpha (float)
   - `fade`: Fade Step (int)
-- **Respuesta**: HTML confirmación + cierre WiFi
+  - `ox`: Accel Offset X (float)
+  - `oy`: Accel Offset Y (float)
+  - `oz`: Accel Offset Z (float)
+- **Respuesta**: HTML confirmación + cambios aplicados inmediatamente
+- **WiFi**: Permanece abierto para más ajustes
 
 #### GET `/status`
 Obtener estado actual (JSON)
@@ -141,22 +145,13 @@ Obtener estado actual (JSON)
 ```
 
 #### GET `/debug`
-Telemetría del sistema (JSON)
-```json
-{
-  "uptime_ms": 45230,
-  "free_heap": 120000,
-  "roll_raw": 12.45,
-  "roll_filtered": 12.23,
-  "pwm_left": 0,
-  "pwm_right": 350,
-  "clients_connected": 1
-}
-```
+Telemetría del sistema en tiempo real
+- **Respuesta**: HTML con estado del sistema, aceleración raw (X,Y,Z) y offsets calibrados
 
 #### GET `/reset`
-Reset a valores por defecto
-- **Respuesta**: HTML confirmación + cierre WiFi
+Reset a valores por defecto (con hot-reload)
+- **Respuesta**: HTML confirmación + cambios aplicados inmediatamente
+- **WiFi**: Permanece abierto para más ajustes
 
 #### GET `/calibrate`
 Calibrar offset del acelerómetro
@@ -171,10 +166,11 @@ Calibrar offset del acelerómetro
 - Inicializa EEPROM, I2C, MPU6050, PWM, WiFi
 - Transición a CONFIG_WINDOW
 
-### Estado: CONFIG_WINDOW (30 segundos o hasta guardar)
-- **Sin clientes**: Cierra WiFi después de 30 segundos → NORMAL
-- **Con cliente conectado**: WiFi permanece activa indefinidamente
-- **Al guardar config**: Expulsa cliente y cierra WiFi → NORMAL
+### Estado: CONFIG_WINDOW (Ventana de configuración)
+- **WiFi AP abierto**: Conecta a "CorneringLight" (192.168.4.1)
+- **Cambios en tiempo real**: Los parámetros se aplican inmediatamente sin reboot
+- **Cierre automático**: WiFi se cierra 30s después de desconectar último cliente
+- **Permanencia con clientes**: Si hay cliente conectado, WiFi permanece indefinidamente
 
 ### Estado: NORMAL (Operación)
 - Lectura continua del MPU6050
@@ -184,6 +180,34 @@ Calibrar offset del acelerómetro
 
 ### Estado: ERROR
 - Sistema en espera si falla inicialización crítica
+
+## 🎯 Uso Rápido
+
+### Primer Arranque
+
+1. Conecta Wemos D1 mini por USB
+2. Compila y sube: `platformio run --target upload --environment d1_mini`
+3. El dispositivo abre WiFi AP "CorneringLight" automáticamente
+
+### Calibración y Configuración
+
+1. Conecta a WiFi "CorneringLight"
+2. Abre `http://192.168.4.1`
+3. En la página de **Debug** puedes ver:
+   - Aceleración raw (X, Y, Z)
+   - Offsets calibrados actuales
+   - Ángulo raw vs filtrado
+   - Estado del PWM
+4. Ajusta los offsets en la página de **Config** basándote en los valores del Debug
+5. Haz clic en **Save Configuration** - los cambios se aplican **inmediatamente**
+6. Repite hasta que X≈0, Y≈0 en modo horizontal
+7. Prueba los valores de **Angle ON/OFF** con la motocicleta inclinada
+
+### Cambio de Modo DEBUG
+
+En `include/config.h`, cambia `DEBUG_MODE`:
+- `#define DEBUG_MODE 1` - Simula acelerómetro (sin hardware MPU6050)
+- `#define DEBUG_MODE 0` - Usa sensor real (requiere hardware conectado)
 
 ## 📂 Estructura del Proyecto
 
@@ -267,12 +291,14 @@ curl http://192.168.4.1/debug
 ✅ **Máquina de estados**: Gestión clara del ciclo de vida
 ✅ **Timeout WiFi inteligente**: 30s sin cliente, infinito con cliente
 ✅ **Configuración persistente**: EEPROM con validación
-✅ **Calibración remota**: Offset del acelerómetro vía endpoint
+✅ **Calibración remota**: Offset del acelerómetro vía endpoint y página web
+✅ **Hot-reload de configuración**: Cambios aplicados inmediatamente sin reboot
 ✅ **Fade configurable**: Velocidad de transición ajustable
-✅ **Protección de valores**: Límites ±90°, validación angelOff < angleOn
+✅ **Protección de valores**: Límites ±90°, validación angleOff < angleOn
 ✅ **HTML optimizado**: Almacenado en PROGMEM para ahorrar RAM
-✅ **Debug remoto**: Telemetría completa vía `/debug`
+✅ **Debug remoto**: Telemetría completa vía `/debug` con valores raw de aceleración
 ✅ **Logging mejorado**: Mensajes informativos con timestamps
+✅ **Modo DEBUG**: Simulación de datos del MPU6050 para pruebas sin hardware
 
 ## 📝 Licencia
 
@@ -292,4 +318,4 @@ Pedro Clemente
 
 ---
 
-**Última actualización**: Enero 2026
+**Última actualización**: Enero 2026 - Hot-reload configuration, calibration improvements
