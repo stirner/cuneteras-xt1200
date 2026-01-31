@@ -152,7 +152,7 @@ Telemetría del sistema en tiempo real
 
 ### Página de Configuración
 
-![Página de Configuración Web](img/web.jpeg)
+<img src="img/web.jpeg" alt="Página de Configuración Web" width="50%">
 
 **Características:**
 - Ajusta todos los parámetros del sistema
@@ -162,7 +162,7 @@ Telemetría del sistema en tiempo real
 
 ### Página de Debug
 
-![Página de Debug](img/debug.jpeg)
+<img src="img/debug.jpeg" alt="Página de Debug" width="50%">
 
 **Información mostrada:**
 - Uptime del dispositivo y memoria libre (heap)
