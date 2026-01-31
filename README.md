@@ -37,6 +37,38 @@ Sistema inteligente de luces de giro para motocicleta que utiliza un acelerómet
   - 5V para Wemos D1 mini (entrada Micro-USB)
   - Voltaje de LEDs según especificación
 
+## 🧩 Componentes (Fotos)
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="img/ESP8266.png" alt="Wemos D1 mini (ESP8266)" width="240">
+      <br>Wemos D1 mini (ESP8266)
+    </td>
+    <td align="center">
+      <img src="img/MPU6050.png" alt="MPU6050" width="240">
+      <br>MPU6050
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="img/LM2596-convertidor.png" alt="Convertidor LM2596" width="240">
+      <br>Convertidor LM2596
+    </td>
+    <td align="center">
+      <img src="img/MOS-IRF520.png" alt="MOSFET IRF520" width="240">
+      <br>MOSFET IRF520
+    </td>
+  </tr>
+</table>
+
+## 🛒 Links de compra (AliExpress)
+
+- https://es.aliexpress.com/item/1005006592852237.html?spm=a2g0o.order_list.order_list_main.23.3f9f194dFS0HfG&gatewayAdapt=glo2esp
+- https://es.aliexpress.com/item/1005006648986003.html?spm=a2g0o.order_list.order_list_main.41.3f9f194dFS0HfG&gatewayAdapt=glo2esp
+- https://es.aliexpress.com/item/1005007129504945.html?spm=a2g0o.order_list.order_list_main.35.3f9f194dFS0HfG&gatewayAdapt=glo2esp
+- https://es.aliexpress.com/item/1005003630189393.html?spm=a2g0o.order_list.order_list_main.29.3f9f194dFS0HfG&gatewayAdapt=glo2esp
+
 ## 🛠️ Requisitos de Software
 
 - **PlatformIO Core**: Gestor de plataformas y bibliotecas
@@ -148,11 +180,18 @@ Obtener estado actual (JSON)
 Telemetría del sistema en tiempo real
 - **Respuesta**: HTML con estado del sistema, aceleración raw (X,Y,Z) y offsets calibrados
 
+#### GET `/calibrate`
+Calibrar offset del acelerómetro
+- **Parámetros**:
+  - `ax`: Offset acelerometro X
+  - `ay`: Offset acelerometro Y
+  - `az`: Offset acelerometro Z
+
 ## 🖼️ Interfaz Web
 
 ### Página de Configuración
 
-<img src="img/web.jpeg" alt="Página de Configuración Web" width="50%">
+<img src="img/web.jpeg" alt="Página de Configuración Web" width="30%">
 
 **Características:**
 - Ajusta todos los parámetros del sistema
@@ -162,7 +201,7 @@ Telemetría del sistema en tiempo real
 
 ### Página de Debug
 
-<img src="img/debug.jpeg" alt="Página de Debug" width="50%">
+<img src="img/debug.jpeg" alt="Página de Debug" width="30%">
 
 **Información mostrada:**
 - Uptime del dispositivo y memoria libre (heap)
@@ -176,12 +215,6 @@ Reset a valores por defecto (con hot-reload)
 - **Respuesta**: HTML confirmación + cambios aplicados inmediatamente
 - **WiFi**: Permanece abierto para más ajustes
 
-#### GET `/calibrate`
-Calibrar offset del acelerómetro
-- **Parámetros**:
-  - `ax`: Offset acelerometro X
-  - `ay`: Offset acelerometro Y
-  - `az`: Offset acelerometro Z
 
 ## 📱 Flujo de Operación
 
