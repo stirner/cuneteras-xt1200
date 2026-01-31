@@ -148,7 +148,30 @@ Obtener estado actual (JSON)
 Telemetría del sistema en tiempo real
 - **Respuesta**: HTML con estado del sistema, aceleración raw (X,Y,Z) y offsets calibrados
 
-#### GET `/reset`
+## 🖼️ Interfaz Web
+
+### Página de Configuración
+
+![Página de Configuración Web](img/web.jpeg)
+
+**Características:**
+- Ajusta todos los parámetros del sistema
+- Toggle para activar/desactivar modo debug
+- Calibración de offsets del acelerómetro
+- Aplicación inmediata de cambios (hot-reload)
+
+### Página de Debug
+
+![Página de Debug](img/debug.jpeg)
+
+**Información mostrada:**
+- Uptime del dispositivo y memoria libre (heap)
+- Ángulo raw vs filtrado
+- Aceleración en 3 ejes (X, Y, Z)
+- PWM actual para LEDs izquierdo y derecho
+- Número de clientes conectados
+- Estado del modo debug (ON/OFF)
+- Offsets de calibración actuales#### GET `/reset`
 Reset a valores por defecto (con hot-reload)
 - **Respuesta**: HTML confirmación + cambios aplicados inmediatamente
 - **WiFi**: Permanece abierto para más ajustes
@@ -192,22 +215,30 @@ Calibrar offset del acelerómetro
 ### Calibración y Configuración
 
 1. Conecta a WiFi "CorneringLight"
-2. Abre `http://192.168.4.1`
-3. En la página de **Debug** puedes ver:
+2. Abre `http://192.168.4.1` (ver imagen de configuración arriba)
+3. En la página de **Debug** (`/debug`) puedes ver:
    - Aceleración raw (X, Y, Z)
    - Offsets calibrados actuales
    - Ángulo raw vs filtrado
    - Estado del PWM
+   - Estado del modo debug (ON/OFF)
 4. Ajusta los offsets en la página de **Config** basándote en los valores del Debug
 5. Haz clic en **Save Configuration** - los cambios se aplican **inmediatamente**
 6. Repite hasta que X≈0, Y≈0 en modo horizontal
 7. Prueba los valores de **Angle ON/OFF** con la motocicleta inclinada
 
-### Cambio de Modo DEBUG
+### Modo DEBUG
 
-En `include/config.h`, cambia `DEBUG_MODE`:
-- `#define DEBUG_MODE 1` - Simula acelerómetro (sin hardware MPU6050)
-- `#define DEBUG_MODE 0` - Usa sensor real (requiere hardware conectado)
+**Opción 1: Desde la interfaz web (recomendado)**
+- En la página de configuración, marca/desmarca el checkbox "Debug Mode (Simulated Sensor)"
+- Haz clic en **Save Configuration**
+- Los cambios se aplican inmediatamente sin reboot
+
+**Opción 2: Desde el código (requiere recompilación)**
+- En `include/config.h`, cambia `DEBUG_MODE`:
+  - `#define DEBUG_MODE 1` - Simula acelerómetro (sin hardware MPU6050)
+  - `#define DEBUG_MODE 0` - Usa sensor real (requiere hardware conectado)
+- Recompila y sube: `platformio run --target upload --environment d1_mini`
 
 ## 📂 Estructura del Proyecto
 
@@ -215,6 +246,9 @@ En `include/config.h`, cambia `DEBUG_MODE`:
 cuneteras-xt1200/
 ├── platformio.ini                 # Configuración de PlatformIO
 ├── README.md                      # Este archivo
+├── img/
+│   ├── web.jpeg                   # Captura de pantalla configuración
+│   └── debug.jpeg                 # Captura de pantalla debug
 │
 ├── include/
 │   ├── config.h                   # Constantes y estructura Config
@@ -234,6 +268,10 @@ cuneteras-xt1200/
 │
 ├── lib/
 │   └── README
+│
+├── img/
+│   ├── web.jpeg                   # Captura de pantalla configuración
+│   └── debug.jpeg                 # Captura de pantalla debug
 │
 └── test/
     └── README
@@ -299,6 +337,7 @@ curl http://192.168.4.1/debug
 ✅ **Debug remoto**: Telemetría completa vía `/debug` con valores raw de aceleración
 ✅ **Logging mejorado**: Mensajes informativos con timestamps
 ✅ **Modo DEBUG**: Simulación de datos del MPU6050 para pruebas sin hardware
+✅ **Toggle Debug en web**: Activar/desactivar modo debug desde la interfaz sin reboot
 
 ## 📝 Licencia
 
